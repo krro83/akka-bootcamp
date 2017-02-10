@@ -1,5 +1,6 @@
 using System;
 using Akka.Actor;
+using WinTail.Messages;
 
 namespace WinTail
 {
@@ -9,8 +10,13 @@ namespace WinTail
     /// </summary>
     class ConsoleReaderActor : UntypedActor
     {
-        public const string ExitCommand = "exit";
+        
         private IActorRef _consoleWriterActor;
+
+        private readonly string NoInputErrorMessage = "No input was received";
+        private readonly string SuccessInputMessage = "Thank you! Message was validated.";
+        private readonly string ValidationErrorMessage = "Invalid: Message has an odd number of characters.";
+
 
         public ConsoleReaderActor(IActorRef consoleWriterActor)
         {
@@ -19,21 +25,54 @@ namespace WinTail
 
         protected override void OnReceive(object message)
         {
-            var read = Console.ReadLine();
-            if (!string.IsNullOrEmpty(read) && String.Equals(read, ExitCommand, StringComparison.OrdinalIgnoreCase))
+            if (message.Equals(Commands.StartCommand))
             {
-                // shut down the system (acquire handle to system via
-                // this actors context)
-                Context.System.Terminate();
-                return;
+                DoPrintInstructions(); 
+            }
+            else if (message is InputError)
+            {
+                _consoleWriterActor.Tell(message as InputError, Self); 
             }
 
-            // send input to the console writer to process and print
-            _consoleWriterActor.Tell(read);
-
-            // continue reading messages from the console
-            Self.Tell(Messages.CONTINUE); 
+            GetAndValidateInput();
         }
 
+        private void GetAndValidateInput()
+        {
+            var message = Console.ReadLine();
+            if (string.IsNullOrEmpty(message))
+            {
+                Self.Tell(new Messages.NullInputError(NoInputErrorMessage)); 
+            }
+            else if (string.Equals(message,Commands.ExitCommand,StringComparison.OrdinalIgnoreCase))
+            {
+                Context.System.Terminate(); 
+            }
+            else
+            {
+                bool valid = IsValid(message);
+                if (valid)
+                {
+                    _consoleWriterActor.Tell(new InputSuccess(SuccessInputMessage), Self);
+                    Self.Tell(new ContinueProcessing()); 
+                }
+                else
+                {
+                    Self.Tell(new ValidationError(ValidationErrorMessage)); 
+                }
+            }
+        }
+
+        private bool IsValid(string message)
+        {
+            return message.Length % 2 == 0; 
+        }
+
+        private void DoPrintInstructions()
+        {
+            Console.WriteLine("Write whatever you want into the console!");
+            Console.WriteLine("Some entries will pass validation, and some won't...\n\n");
+            Console.WriteLine("Type 'exit' to quit this application at any time.\n");
+        }
     }
 }
