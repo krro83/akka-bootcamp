@@ -13,11 +13,6 @@ namespace WinTail
         
         private IActorRef _validationActor;
 
-        private readonly string NoInputErrorMessage = "No input was received";
-        private readonly string SuccessInputMessage = "Thank you! Message was validated.";
-        private readonly string ValidationErrorMessage = "Invalid: Message has an odd number of characters.";
-
-
         public ConsoleReaderActor(IActorRef validationActor)
         {
             _validationActor = validationActor;
