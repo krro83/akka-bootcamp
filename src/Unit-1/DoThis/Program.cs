@@ -11,6 +11,8 @@ namespace WinTail
         public static string ConsoleWriterActorName = "consoleWriterActor";
         public static string ConsoleReaderActorName = "consoleReaderActor";
         public static string ValidationActorName = "validationActor";
+        public static string TailCoordinatorActorName = "tailCoordinatorActor";
+         
 
         static void Main(string[] args)
         {
@@ -18,10 +20,13 @@ namespace WinTail
             MyActorSystem = ActorSystem.Create("MyActorSystem");
 
             var consoleWriterProps = Props.Create(() => new ConsoleWriterActor());
-            var consoleWriterActor = MyActorSystem.ActorOf(consoleWriterProps, ConsoleWriterActorName); 
+            var consoleWriterActor = MyActorSystem.ActorOf(consoleWriterProps, ConsoleWriterActorName);
 
-            var validationActorProps = Props.Create(() => new ValidationActor(consoleWriterActor));
-            var validationActor = MyActorSystem.ActorOf(validationActorProps, ValidationActorName); 
+            var tailCoordinatorProps = Props.Create(() => new TailCoordinatorActor());
+            var tailCoordinatorActor = MyActorSystem.ActorOf(tailCoordinatorProps, TailCoordinatorActorName); 
+
+            var fileValidationActorProps = Props.Create(() => new FileValidatorActor(consoleWriterActor, tailCoordinatorActor));
+            var validationActor = MyActorSystem.ActorOf(fileValidationActorProps, ValidationActorName); 
 
             var consoleReaderProps = Props.Create(() => new ConsoleReaderActor(validationActor));
             var consoleReaderActor = MyActorSystem.ActorOf(consoleReaderProps, ConsoleReaderActorName); 
@@ -31,6 +36,8 @@ namespace WinTail
 
             // blocks the main thread from exiting until the actor system is shut down
             MyActorSystem.WhenTerminated.Wait();
+
+            //todo: påbörja lesson 5
         }
     }
     #endregion

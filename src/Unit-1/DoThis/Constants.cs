@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Akka.Actor;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -14,9 +15,7 @@ namespace WinTail.Messages
     }
 
     #region Neutral and System Messages
-
     public class ContinueProcessing{ }
-
     #endregion
 
     #region Success Messages
@@ -50,5 +49,77 @@ namespace WinTail.Messages
     {
         public ValidationError(string reason) : base(reason) { }
     }
+    #endregion
+
+    #region Tail Messages
+    public class StartTail
+    {
+        public StartTail(string filePath, IActorRef reporterActor)
+        {
+            FilePath = filePath;
+            ReporterActor = reporterActor;
+        }
+
+        public string FilePath { get; private set; }
+
+        public IActorRef ReporterActor { get; private set; }
+    }
+
+    /// <summary>
+    /// Stop tailing the file at user-specified path.
+    /// </summary>
+    public class StopTail
+    {
+        public StopTail(string filePath)
+        {
+            FilePath = filePath;
+        }
+
+        public string FilePath { get; private set; }
+    }
+    #endregion
+
+    #region File Messages
+    public class FileWrite
+    {
+        public FileWrite(string fileName)
+        {
+            FileName = fileName;
+        }
+
+        public string FileName { get; private set; }
+    }
+
+    /// <summary>
+    /// Signal that the OS had an error accessing the file.
+    /// </summary>
+    public class FileError
+    {
+        public FileError(string fileName, string reason)
+        {
+            FileName = fileName;
+            Reason = reason;
+        }
+
+        public string FileName { get; private set; }
+
+        public string Reason { get; private set; }
+    }
+
+    /// <summary>
+    /// Signal to read the initial contents of the file at actor startup.
+    /// </summary>
+    public class InitialRead
+    {
+        public InitialRead(string fileName, string text)
+        {
+            FileName = fileName;
+            Text = text;
+        }
+
+        public string FileName { get; private set; }
+        public string Text { get; private set; }
+    }
+
     #endregion
 }
